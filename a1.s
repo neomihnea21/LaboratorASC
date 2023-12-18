@@ -1,5 +1,5 @@
 .data
-  matrix: .space 2200
+  matrix: .space 2200 # A MERS, intrebarea e unde scrie cand dai printf
   newMatrix: .space 2200
   line: .space 4
   column: .space 4
@@ -57,17 +57,21 @@ citire:
    cmp %ecx, p
    je continuare
    
+   pushl %ecx
    pushl $line
    pushl $formatRead
    call scanf
    popl %ebx
    popl %ebx
+   popl %ecx
    
+   pushl %ecx
    pushl $column
    pushl $formatRead
    call scanf
    popl %ebx
    popl %ebx
+   popl %ecx
    #vom mari indicii de linie si coloana cu 1, ca sa fie bordare
    incl line
    incl column 
@@ -101,14 +105,18 @@ continuare:
     movl $1, lineIndex
    C_linii:
      movl lineIndex, %ebx
+     decl %ebx
      cmp %ebx, m
-     jg finalPas
+     je finalPas
+     incl %ebx
      movl $1, columnIndex
      #parcurgem linia la care suntem in lineIndex
      C_linieCurenta:
        movl columnIndex, %ebx
+       decl %ebx
        cmp n, %ebx
-       jg finalGeneratie
+       je finalGeneratie
+       incl %ebx
        movl lineIndex, %eax
        xorl %edx, %edx
        mull n
@@ -204,13 +212,33 @@ continuare:
        xorl %esi, %esi
        xorl %ecx, %ecx
        addl $1, %ecx
-       buclaFinal:
-	  cmp %ecx, produs
-	  je reiaPas
-	  movl (%ebx, %ecx, 4), %esi
-	  movl %esi, (%edi, %ecx, 4)
-	  addl $1, %ecx
-          jmp buclaFinal
+       #AICI E SEGFAULTUL!!!
+       movl $1, lineIndex
+       copiereLinii:
+         movl lineIndex, %ebx
+         decl %ebx
+         cmp %ebx, m
+         je reiaPas
+         incl %ebx
+         movl $1, columnIndex
+         copiereCurenta:
+           movl columnIndex, %ebx
+           decl %ebx
+           cmp n, %ebx
+           je finalLinie
+           incl %ebx
+           movl lineIndex, %eax
+           xorl %edx, %edx
+           mull n
+           addl columnIndex, %eax
+           lea newMatrix, %esi
+           movl (%esi, %eax, 4), %ebx
+           movl %ebx, (%edi, %eax, 4)
+           incl columnIndex
+           finalLinie:
+              movl $0, columnIndex
+              incl lineIndex
+              jmp copiereLinii              
     reiaPas:
     incl i 
     jmp pasConway
@@ -241,11 +269,12 @@ scriere:
        incl columnIndex
        jmp linieCurenta
      finalScriere:
-        movl $4, %eax
-        movl $1, %ebx
-        movl $newline, %ecx
-        movl $2, %edx
-        int $0x80
+        pushl $newline
+        pushl $formatWrite
+        call printf
+        popl %ebx
+        popl %ebx
+        movl $1, columnIndex
         incl lineIndex
         jmp linii
         #scriem cu syscall un \n si ne intoarcem de unde am venit, pe linia urmatoare
