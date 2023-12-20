@@ -242,13 +242,14 @@ continuare:
     reiaPas:
     incl i 
     jmp pasConway
-# o sa arate neuzual, deoarece matricea e indexata de la 1, ca sa se bordeze    
+# o sa arate neuzual, deoarece matricea e indexata de la 1, ca sa se bordeze   
 scriere:
-   movl $1, lineIndex
+    movl $1, lineIndex
+    lea matrix, %edi
    linii:
      movl lineIndex, %ebx
      cmp %ebx, m
-     jg exit
+     jl exit
      movl $1, columnIndex
      #parcurgem linia la care suntem in lineIndex
      linieCurenta:
@@ -260,10 +261,14 @@ scriere:
        mull n
        addl columnIndex, %eax
        #am pus in eax indicele unde scriem 
-       pushl %eax
-       pushl formatWrite
+       pushl (%edi, %eax, 4)/.
+       pushl $formatWrite
        call printf
        popl %ebx
+       popl %ebx
+       
+       pushl $0
+       call fflush
        popl %ebx
        #am scris, avansam 1 pe linie si da-i
        incl columnIndex
