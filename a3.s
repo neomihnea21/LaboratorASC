@@ -41,19 +41,22 @@ main:
    popl %ebx
    popl %ebx
    movl %eax, outStream
- 
+   
+   movl inStream, %esi # baiatul e callee-saved, asa ca il pot baga pe stiva la fiecare faza, nu se strica
    pushl $m
    pushl $formatRead
-   pushl $inFile
+   pushl %esi
    call fscanf
-   addl $12, %esp
+   popl %ebx
+   popl %ebx
+   popl %ebx
    
    movl m, %ebx #din motive neintelese, m si n se distrug, asa ca le pastram separat
    movl %ebx, deepM #trebuie sa jucam din doua, pentru ca mov a, b, e eroare
    
    pushl $n
    pushl $formatRead
-   pushl $inFile
+   pushl %esi
    call fscanf
    popl %ebx
    popl %ebx
@@ -64,7 +67,7 @@ main:
    
    pushl $p
    pushl $formatRead
-   pushl $inFile
+   pushl %esi
    call fscanf
    popl %ebx
    popl %ebx
@@ -96,7 +99,7 @@ citire:
    pushl %ecx
    pushl $line
    pushl $formatRead
-   pushl $inFile
+   pushl %esi
    call fscanf
    popl %ebx
    popl %ebx
@@ -104,9 +107,9 @@ citire:
    popl %ecx
    
    pushl %ecx
-   pushl $n
+   pushl $column
    pushl $formatRead
-   pushl $inFile
+   pushl %esi
    call fscanf
    popl %ebx
    popl %ebx
@@ -131,7 +134,7 @@ citire:
 continuare:
    pushl $k
    pushl $formatRead
-   pushl $inFile
+   pushl %esi
    call fscanf
    popl %ebx
    popl %ebx
@@ -321,9 +324,10 @@ scriere:
        addl columnIndex, %eax
        incl %eax
        #am pus in eax indicele unde scriem 
+       movl outStream, %esi
        pushl (%edi, %eax, 4)
        pushl $formatWrite
-       pushl $outStream
+       pushl %esi
        call fprintf
        popl %ebx
        popl %ebx
@@ -334,9 +338,10 @@ scriere:
        jmp linieCurenta
      finalScriere:
         movl $newline, %ebx
+        movl outStream, %esi
         pushl %ebx
         pushl $formatString
-        pushl $outStream
+        pushl %esi
         call fprintf
         popl %ebx
         popl %ebx
@@ -346,6 +351,17 @@ scriere:
         incl lineIndex
         jmp linii
 exit:
+  movl inStream, %edi
+  movl outStream, %esi
+  
+  pushl %edi
+  call fclose
+  addl $4, %esp
+  
+  pushl %esi
+  call fclose
+  addl $4, %esp
+  
   movl $1, %eax
   movl $0, %ebx
   int $0x80
