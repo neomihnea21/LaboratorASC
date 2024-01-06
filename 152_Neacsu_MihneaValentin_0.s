@@ -15,7 +15,7 @@
   formatRead: .asciz "%ld"
   formatWrite: .asciz "%ld "
   formatString: .asciz "%s"
-  newline: .asciz "\n"
+  newline: .asciz "\n "
   lineIndex: .long 0
   columnIndex: .long 0
 .text
