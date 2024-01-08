@@ -286,38 +286,50 @@ continuare:
     jmp pasConway
 # o sa arate neuzual, deoarece matricea e indexata de la 1, ca sa se bordeze 
 decizie:
-  movl $0, %eax
-  cmp sens, %eax
-  je faCriptare
-  jne exit
+  
 faCriptare:
 
 movl $-1, %ebx
 movl $-1, %edx
 
 lungimeMesaj:
-  addl $1, %edx #indicele de lucru in mesaj
-  addl $1, %ebx
   lea mesajBiti, %edi
   lea mesaj, %esi
   movl %edx, len
-  movl $0, (%edi, %edx, 4)
-  movzbl (%esi, %ebx, 4), %eax
-  movl %eax, (%edi, %ebx, 4)
+  addl $1, %edx #indicele de lucru in mesaj
+  addl $1, %ebx
+  movl $0, (%edi, %edx, 4) # pregatim sa fie 0 unde vom pune 
+  movzbl (%esi, %ebx, 1), %eax
   cmp $0, %eax
   je aflaCheie
-  jmp lungimeMesaj
+  movl $7, %ecx # odata ajunsi la un caracter, il desfasuram pentru a-i scrie bitii
+  desfaCaracter: #se afla 1 in %eax
+   cmp $0, %ecx
+   je lungimeMesaj
+   shlb $1, %al #miscam bitul de evaluat sub ultima pozitie, unde e testul de 1
+   pushl %edx #edx tine unde scriem bitul
+   movb %al, %dl #sa nu stea in al
+   and $0x80, %dl
+   cmpb $0, %dl
+   jne scrieBit #e un if, daca e 0 e pe aici, altfel e pe jos
+   popl %edx
+   addl $1, %edx
+   movl $0, (%edi, %edx, 4) #edx URMARESTE BITUL
+   subl $1, %ecx
+   jmp desfaCaracter
+   
+   scrieBit:
+      popl %edx #se intoarce din caseta de valori de pe stiva
+      incl %edx
+      movl $1, (%edi, %edx, 4)
+      subl $1, %ecx
+      jmp desfaCaracter
 aflaCheie:
-    movl len, %ebx
-    pushl $mesajBiti
-    pushl $formatString
-    call printf
-    popl %ebx 
-    popl %ebx
-    pushl $0
-    call fflush
-    popl %ebx
-    jmp exit
+    movl %edx, len #acum stim lungimea mesajului si reprezentarea sa binara
+    movl $1, %eax
+    mull deepN
+    mull deepM
+    movl %eax, produs # recalculam produsul
     
     movl $0, %ecx
     movl deepM, %ebx
@@ -325,8 +337,8 @@ aflaCheie:
     movl deepN, %ebx
     movl %ebx, n
     movl $1, lineIndex #aici e Las Tres Marias pentru tema asta
-    lea matrix, %edi
-    lea cheie, %esi
+    lea mesajBiti, %edi
+    lea mesaj, %esi
    linii:
      movl lineIndex, %ebx
      cmp %ebx, m
@@ -345,7 +357,9 @@ aflaCheie:
        addl columnIndex, %eax
        incl %eax
        #am pus in eax indicele unde scriem 
-       movb (%edi, %eax, 4), %ah
+       movl (%edi, %eax, 4), %bl
+       movl (%esi, %eax, 4), %cl
+       xorb %bl, %cl
        
        #am scris, avansam 1 pe linie si da-i
        addl $1, %ecx
