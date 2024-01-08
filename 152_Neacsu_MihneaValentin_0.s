@@ -1,4 +1,4 @@
-.data
+data
   matrix: .space 2200 
   newMatrix: .space 2200
   line: .space 4
@@ -15,7 +15,7 @@
   formatRead: .asciz "%ld"
   formatWrite: .asciz "%ld "
   formatString: .asciz "%s"
-  newline: .asciz "\n"
+  newline: .asciz " \n"
   lineIndex: .long 0
   columnIndex: .long 0
 .text
@@ -293,7 +293,15 @@ scriere:
        incl %eax
        #am pus in eax indicele unde scriem 
        pushl (%edi, %eax, 4)
+       movl deepN, %ebx
+       cmp %ebx, columnIndex
+       je scrieFara
        pushl $formatWrite
+       jmp incheie
+       scrieFara:
+       pushl $formatRead
+       jmp incheie
+       incheie:
        call printf
        popl %ebx
        popl %ebx
