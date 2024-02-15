@@ -1,4 +1,4 @@
-data
+.data
   matrix: .space 2200 
   newMatrix: .space 2200
   line: .space 4
@@ -11,36 +11,54 @@ data
   i: .space 4
   pos: .space 4
   p: .space 4
-  sens: .space 4
-  len: .space 4
   produs: .space 8
-  mesaj: .space 88
-  cheie: .space 88
-  mesajBiti: .space 88
-  formatRead: .asciz "%ld"
-  formatWrite: .asciz "%ld "
+  inStream: .space 50
+  outStream: .space 50 #nu stiu cat ocupa un FILE*, am pus mult spatiu
+  read: .asciz "r"
+  write: .asciz "w"
+  inFile: .asciz "in.txt"
+  outFile: .asciz "out.txt"
+  formatRead: .asciz "%d"
+  formatWrite: .asciz "%d "
   formatString: .asciz "%s"
   newline: .asciz "\n"
   lineIndex: .long 0
   columnIndex: .long 0
-  cheieMaxima: .long 80
 .text
 
 .global main
 main:
+   pushl $read
+   pushl $inFile
+   call fopen
+   popl %ebx
+   popl %ebx
+   movl %eax, inStream
    
+   pushl $write
+   pushl $outFile
+   call fopen
+   popl %ebx
+   popl %ebx
+   movl %eax, outStream
+   
+   movl inStream, %esi # baiatul e callee-saved, asa ca il pot baga pe stiva la fiecare faza, nu se strica
    pushl $m
    pushl $formatRead
-   call scanf
+   pushl %esi
+   call fscanf
+   popl %ebx
    popl %ebx
    popl %ebx
    
-   movl m, %ebx
+   movl m, %ebx #din motive neintelese, m si n se distrug, asa ca le pastram separat
    movl %ebx, deepM #trebuie sa jucam din doua, pentru ca mov a, b, e eroare
    
    pushl $n
    pushl $formatRead
-   call scanf
+   pushl %esi
+   call fscanf
+   popl %ebx
    popl %ebx
    popl %ebx
    
@@ -49,7 +67,9 @@ main:
    
    pushl $p
    pushl $formatRead
-   call scanf
+   pushl %esi
+   call fscanf
+   popl %ebx
    popl %ebx
    popl %ebx
    
@@ -79,7 +99,9 @@ citire:
    pushl %ecx
    pushl $line
    pushl $formatRead
-   call scanf
+   pushl %esi
+   call fscanf
+   popl %ebx
    popl %ebx
    popl %ebx
    popl %ecx
@@ -87,7 +109,9 @@ citire:
    pushl %ecx
    pushl $column
    pushl $formatRead
-   call scanf
+   pushl %esi
+   call fscanf
+   popl %ebx
    popl %ebx
    popl %ebx
    popl %ecx
@@ -110,19 +134,9 @@ citire:
 continuare:
    pushl $k
    pushl $formatRead
-   call scanf
+   pushl %esi
+   call fscanf
    popl %ebx
-   popl %ebx
-   
-   pushl $sens
-   pushl $formatRead
-   call scanf
-   popl %ebx
-   popl %ebx
-   
-   pushl $mesaj
-   pushl $formatString
-   call scanf
    popl %ebx
    popl %ebx
    # acum sa incheiem citirea, care era gresita
@@ -132,7 +146,7 @@ continuare:
     #nu pun adresa lui newMatrix in ESI, ca sa fac o schema cu adrese la suprascriere
     movl i, %ecx
     cmp %ecx, k
-    je decizie
+    je scriere
     # daca am facut k generatii, scrie ce avem
     #parcurgem matricea cu variabilele lineIndex si columnIndex
     movl $1, lineIndex
@@ -284,49 +298,14 @@ continuare:
     reiaPas:
     incl i 
     jmp pasConway
-# o sa arate neuzual, deoarece matricea e indexata de la 1, ca sa se bordeze 
-decizie:
-  movl $0, %eax
-  cmp sens, %eax
-  je faCriptare
-  jne exit
-faCriptare:
-
-movl $-1, %ebx
-movl $-1, %edx
-
-lungimeMesaj:
-  addl $1, %edx #indicele de lucru in mesaj
-  addl $1, %ebx
-  lea mesajBiti, %edi
-  lea mesaj, %esi
-  movl %edx, len
-  movl $0, (%edi, %edx, 4)
-  movzbl (%esi, %ebx, 4), %eax
-  movl %eax, (%edi, %ebx, 4)
-  cmp $0, %eax
-  je aflaCheie
-  jmp lungimeMesaj
-aflaCheie:
-    movl len, %ebx
-    pushl $mesajBiti
-    pushl $formatString
-    call printf
-    popl %ebx 
-    popl %ebx
-    pushl $0
-    call fflush
-    popl %ebx
-    jmp exit
-    
-    movl $0, %ecx
+# o sa arate neuzual, deoarece matricea e indexata de la 1, ca sa se bordeze   
+scriere:
     movl deepM, %ebx
     movl %ebx, m
     movl deepN, %ebx
     movl %ebx, n
     movl $1, lineIndex #aici e Las Tres Marias pentru tema asta
     lea matrix, %edi
-    lea cheie, %esi
    linii:
      movl lineIndex, %ebx
      cmp %ebx, m
@@ -345,18 +324,44 @@ aflaCheie:
        addl columnIndex, %eax
        incl %eax
        #am pus in eax indicele unde scriem 
-       movb (%edi, %eax, 4), %ah
+       movl outStream, %esi
+       pushl (%edi, %eax, 4)
+       pushl $formatWrite
+       pushl %esi
+       call fprintf
+       popl %ebx
+       popl %ebx
+       popl %ebx
        
        #am scris, avansam 1 pe linie si da-i
-       addl $1, %ecx
        incl columnIndex
        jmp linieCurenta
      finalScriere:
+        movl $newline, %ebx
+        movl outStream, %esi
+        pushl %ebx
+        pushl $formatString
+        pushl %esi
+        call fprintf
+        popl %ebx
+        popl %ebx
+        popl %ebx
         
         movl $1, columnIndex
         incl lineIndex
         jmp linii
 exit:
+  movl inStream, %edi
+  movl outStream, %esi
+  
+  pushl %edi
+  call fclose
+  addl $4, %esp
+  
+  pushl %esi
+  call fclose
+  addl $4, %esp
+  
   movl $1, %eax
   movl $0, %ebx
   int $0x80
